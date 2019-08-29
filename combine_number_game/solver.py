@@ -4,7 +4,7 @@ import operator
 
 import itertools as it
 
-
+from timeit import default_timer as timer
 
 class Solver:
     """
@@ -13,6 +13,7 @@ class Solver:
     def __init__(self,
                  target=None,
                  numbers=None,
+                 verbose=False,
                  ):
         """
         """
@@ -22,7 +23,6 @@ class Solver:
             '-': (2, operator.sub),
             '*': (2, operator.mul),
             '/': (2, operator.truediv),
-            # '%': (2, operator.mod),
         }
 
         msg = 'target must be an int'
@@ -35,10 +35,12 @@ class Solver:
 
         self.target = target
         self.numbers = numbers
+        self.verbose = verbose
 
         self.patterns = [e for e in self.gen_all_binary_tree(len(self.numbers))]
 
-    def gen_all_binary_tree(self, n):
+    def gen_all_binary_tree(self,
+                            n):
         """
         n operands, n-1 operations
         """
@@ -72,65 +74,90 @@ class Solver:
                     idx_o += 1
             yield seq
 
-    def eval_sequence(self, seq, target=None):
+    def eval_sequence(self,
+                      seq,
+                      target=None,
+                      verbose=False):
         """
         """
+        if self.verbose or verbose:
+            print('>>>', seq)
+
         stack = []
-
         for e in seq:
-            # print(e)
-            # print(type(e))
-            # print(isinstance(e, int))
-
             if isinstance(e, int):
-                # print('w1')
                 stack.append(e)
-                # print(stack)
             else:
-                # print('w2')
+                if self.verbose or verbose:
+                    print(e)
+
                 n, op = self._ops[e]
-                # print(n, e)
-                # stack.append(op)
-                # if n > len(stack):
-                #     return False,  'too few values in stack'
                 args = stack[-n:]
+
+                if e == '/' and args[1] == 0:
+                    return False,  'div by zero'
+
                 res = op(*args)
-                if op == '/':
+
+                if e == '/':
                     if args[0] % args[1] != 0:
                         return False,  'not int division'
                 else:
                     res = int(res)
+
+                stack[-n:] = [res]
+
                 if target and res == target:
                     return True, target
-                # print(args)
-                # print(stack)
-                stack[-n:] = [res]
+
+            if self.verbose or verbose:
                 print(stack)
 
         return True, stack[-1]
 
-    def solve(self):
+    def solve(self, n_max=None):
         """
         """
-        c = 0
+        t0 = timer()
+
         results = []
         solutions = []
 
         for p in self.patterns:
             g = self.gen_sequence(p)
-            g2 = it.islice(g, 3)
 
-            for seq in g2:
-                print('>>>', seq)
+            if n_max:
+                g = it.islice(g, n_max)
+
+            for seq in g:
                 res = self.eval_sequence(seq)
                 if res[0]:
-                    print('----', res)
-                    c += 1
                     results.append(res[1])
+                    if res[1] == self.target:
+                        solutions.append(seq)
 
+                if self.verbose:
+                    print('---', res)
 
-
-        self.c = c
         self.results = results
         self.solutions = solutions
+        
+        t1 = timer()
+        self.time = t1 - t0
+
+    def show_results(self):
+        """
+        """
+        print(f'run time = {self.time:.2f} s')
+        print(f'nb valid sequences = {len(self.results)}')
+        print(f'nb solutions = {len(self.solutions)}')
+        if len(self.solutions):
+            for k, e in enumerate(self.solutions):
+                k, print(e)
+
+    def inspect_solution(self, n):
+        """
+        """
+        return self.eval_sequence(self.solutions[n], verbose=True)
+
 
