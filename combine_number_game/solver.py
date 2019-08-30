@@ -1,10 +1,15 @@
 
-
 import operator
 
 import itertools as it
+import pandas as pd
+import seaborn as sns
+
+
+from IPython.display import display
 
 from timeit import default_timer as timer
+
 
 class Solver:
     """
@@ -98,59 +103,90 @@ class Solver:
                     return False,  'div by zero'
 
                 res = op(*args)
+                
+                # print(res, type(res))
 
                 if e == '/':
                     if args[0] % args[1] != 0:
                         return False,  'not int division'
-                else:
-                    res = int(res)
+                    else:
+                        res = int(res)
+
+                # print(res, type(res))
 
                 stack[-n:] = [res]
 
                 if target and res == target:
                     return True, target
 
+                if isinstance(res, float):
+                    raise Exception('wrong type')
+
             if self.verbose or verbose:
                 print(stack)
 
         return True, stack[-1]
 
-    def solve(self, n_max=None):
+    def solve(self,
+              n_max_per_pattern=None,
+              close=10,
+              stop_at_solution=None):
         """
         """
         t0 = timer()
 
-        results = []
+        nb_res = 0
+        close_results = []
         solutions = []
 
-        for p in self.patterns:
+        print(f'nb binary trees = {len(self.patterns)}')
+
+        for k, p in enumerate(self.patterns):
+            print(f'{k}', end=' ')
             g = self.gen_sequence(p)
 
-            if n_max:
-                g = it.islice(g, n_max)
+            if n_max_per_pattern:
+                g = it.islice(g, n_max_per_pattern)
 
             for seq in g:
                 res = self.eval_sequence(seq)
                 if res[0]:
-                    results.append(res[1])
-                    if res[1] == self.target:
-                        solutions.append(seq)
+                    nb_res += 1
+                    if abs(res[1]-self.target) <= close:
+                        d = {
+                            'pattern': k,
+                            'sequence': seq,
+                            'value': res[1],
+                        }
+                        close_results.append(d)
+                        if res[1] == self.target:
+                            solutions.append(d)
+
+                    if stop_at_solution and len(solutions) == stop_at_solution:
+                        break
 
                 if self.verbose:
                     print('---', res)
 
-        self.results = results
-        self.solutions = solutions
-        
+            if stop_at_solution and len(solutions) == stop_at_solution:
+                break
+        print('')
+
         t1 = timer()
         self.time = t1 - t0
+
+        self.nb_res = nb_res
+        self.close_results = close_results
+        self.solutions = solutions
+
+        self.df_res = pd.DataFrame(self.close_results)
 
     def show_results(self):
         """
         """
         print(f'run time = {self.time:.2f} s')
-        print(f'nb valid sequences = {len(self.results)}')
-        print(f'nb solutions = {len(self.solutions)}')
+        print(f'nb valid sequences = {self.nb_res:,}')
+        print(f'nb solutions = {len(self.solutions):,}')
         if len(self.solutions):
             for k, e in enumerate(self.solutions):
                 k, print(e)
@@ -158,6 +194,33 @@ class Solver:
     def inspect_solution(self, n):
         """
         """
-        return self.eval_sequence(self.solutions[n], verbose=True)
+        return self.eval_sequence(self.solutions[n]['sequence'],
+                                  verbose=True)
 
+    def stats_results(self):
+        """
+        """
+        min_ = self.df_res['value'].min()
+        max_ = self.df_res['value'].max()
 
+        dic = {k: 0 for k in range(min_, max_+1)}
+        for e in self.close_results:
+            v = e['value']
+            dic[v] = dic[v] + 1
+
+        dfh = pd.DataFrame(data=[[k, dic[k]] for k in dic.keys()],
+                           columns=['value', 'nb hits'])
+        dfh = dfh.set_index('value')
+
+        c1, c2 = ["#9b59b6", "#3498db"]
+        c1, c2 = ["red", "#3498db"]
+        idx = self.target - min_
+        color = [[c2 if e != idx else c1
+                    for e in range(len(dfh))]]
+        with sns.axes_style("darkgrid"):
+            ax = dfh.plot(kind='bar',
+                            width=0.85,
+                            figsize=(12, 5),
+                            color=color,
+                            )
+        # return ax
