@@ -3,7 +3,7 @@
 
 In French, "Le Compte est Bon".
 
-Given
+Given:
 + several numbers, usually 6
 + a target, usually a larger number
 
