@@ -11,7 +11,7 @@ the player must find a sequence of operations (`+`, `-`, `*`, `/`) applied to th
 
 Example:
 
-For the following:
+For the following input:
 + Target: 335
 + Numbers; 3, 3, 4, 6, 7, 9
 
