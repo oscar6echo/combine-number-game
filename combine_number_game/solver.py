@@ -1,4 +1,5 @@
 
+import os
 import operator
 
 import itertools as it
@@ -42,10 +43,20 @@ class Solver:
         self.numbers = numbers
         self.verbose = verbose
 
-        self.patterns = [e for e in self.gen_all_binary_tree(len(self.numbers))]
+        self.patterns_postfix = [e for e in self.gen_all_binary_tree(
+            len(self.numbers),
+            repr='postfix')]
+        self.patterns_parenth = [e for e in self.gen_all_binary_tree(
+            len(self.numbers),
+            repr='parenth')]
+
+        data = [[a, b] for (a, b) in zip(self.patterns_parenth,
+                                         self.patterns_postfix)]
+        self.df_pattern = pd.DataFrame(data, columns=['parenth', 'postfix'])
 
     def gen_all_binary_tree(self,
-                            n):
+                            n,
+                            repr='postfix'):
         """
         n operands, n-1 operations
         """
@@ -53,11 +64,13 @@ class Solver:
             yield 'x'
 
         for i in range(1, n):
-            left = self.gen_all_binary_tree(i)
-            right = self.gen_all_binary_tree(n-i)
+            left = self.gen_all_binary_tree(i, repr=repr)
+            right = self.gen_all_binary_tree(n-i, repr=repr)
             for l, r in it.product(left, right):
-                # yield '('+l+'o'+r+')'
-                yield l+r+'o'
+                if repr == 'postfix':
+                    yield l+r+'o'
+                else:
+                    yield '('+l+'o'+r+')'
 
     def gen_sequence(self, pattern):
         """
@@ -89,7 +102,7 @@ class Solver:
             print('>>>', seq)
 
         stack = []
-        for e in seq:
+        for k, e in enumerate(seq):
             if isinstance(e, int):
                 stack.append(e)
             else:
@@ -100,24 +113,20 @@ class Solver:
                 args = stack[-n:]
 
                 if e == '/' and args[1] == 0:
-                    return False,  'div by zero'
+                    return False, 'div by zero', None
 
                 res = op(*args)
-                
-                # print(res, type(res))
 
                 if e == '/':
                     if args[0] % args[1] != 0:
-                        return False,  'not int division'
+                        return False, 'not int division', None
                     else:
                         res = int(res)
-
-                # print(res, type(res))
 
                 stack[-n:] = [res]
 
                 if target and res == target:
-                    return True, target
+                    return True, res, seq[:k+1]
 
                 if isinstance(res, float):
                     raise Exception('wrong type')
@@ -125,7 +134,7 @@ class Solver:
             if self.verbose or verbose:
                 print(stack)
 
-        return True, stack[-1]
+        return True, stack[-1], seq
 
     def solve(self,
               n_max_per_pattern=None,
@@ -139,9 +148,9 @@ class Solver:
         close_results = []
         solutions = []
 
-        print(f'nb binary trees = {len(self.patterns)}')
+        print(f'nb binary trees = {len(self.patterns_postfix)}')
 
-        for k, p in enumerate(self.patterns):
+        for k, p in enumerate(self.patterns_postfix):
             print(f'{k}', end=' ')
             g = self.gen_sequence(p)
 
@@ -149,17 +158,17 @@ class Solver:
                 g = it.islice(g, n_max_per_pattern)
 
             for seq in g:
-                res = self.eval_sequence(seq)
+                res = self.eval_sequence(seq, self.target)
                 if res[0]:
                     nb_res += 1
                     if abs(res[1]-self.target) <= close:
                         d = {
                             'pattern': k,
-                            'sequence': seq,
+                            'sequence': tuple(res[2]),
                             'value': res[1],
                         }
                         close_results.append(d)
-                        if res[1] == self.target:
+                        if res[1] == self.target:                            
                             solutions.append(d)
 
                     if stop_at_solution and len(solutions) == stop_at_solution:
@@ -179,17 +188,26 @@ class Solver:
         self.close_results = close_results
         self.solutions = solutions
 
-        self.df_res = pd.DataFrame(self.close_results)
+        df = pd.DataFrame(self.solutions)
+        self.df_sol = df.drop_duplicates().reset_index(drop=True)
+
+        df = pd.DataFrame(self.close_results)
+        df = df.drop_duplicates().reset_index(drop=True)
+        df['miss'] = df['value'] - self.target
+        df['abs_miss'] = df['miss'].abs()
+        df['seq length'] = df['sequence'].apply(lambda x: len(x))
+        df = df.sort_values(['seq length', 'abs_miss']).reset_index(drop=True)
+        df = df.drop('abs_miss', axis=1)
+        self.df_res = df
 
     def show_results(self):
         """
         """
         print(f'run time = {self.time:.2f} s')
-        print(f'nb valid sequences = {self.nb_res:,}')
-        print(f'nb solutions = {len(self.solutions):,}')
-        if len(self.solutions):
-            for k, e in enumerate(self.solutions):
-                k, print(e)
+        print(f'nb valid sequences = {len(self.df_res):,}')
+        print(f'nb solutions = {len(self.df_sol):,}')
+        if self.solutions:
+            display(self.df_sol)
 
     def inspect_solution(self, n):
         """
@@ -216,11 +234,39 @@ class Solver:
         c1, c2 = ["red", "#3498db"]
         idx = self.target - min_
         color = [[c2 if e != idx else c1
-                    for e in range(len(dfh))]]
+                  for e in range(len(dfh))]]
         with sns.axes_style("darkgrid"):
             ax = dfh.plot(kind='bar',
-                            width=0.85,
-                            figsize=(12, 5),
-                            color=color,
-                            )
-        # return ax
+                          width=0.85,
+                          figsize=(12, 5),
+                          color=color,
+                          )
+
+    def show_patterns(self):
+        """
+        """
+        print(f'#\tparenthesis\t\tpostfix')
+        print('-'*45)
+        for k, r in self.df_pattern.iterrows():
+            print(f'{k}\t{r.parenth}\t{r.postfix}')
+
+    def store(self):
+        """
+        """
+        folder = 'dump'
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+
+        path = os.path.join(folder, 'df_patterns.csv')
+        self.df_pattern.to_csv(path, index=None)
+        print(f'saved patterns as {path}')
+
+        path = os.path.join(folder, 'df_solutions.csv')
+        self.df_sol.to_csv(path, index=None)
+        print(f'saved solutions as {path}')
+
+        path = os.path.join(folder, 'df_results.csv')
+        self.df_res.to_csv(path, index=None)
+        print(f'saved results as {path}')
+
+
