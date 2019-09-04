@@ -126,7 +126,18 @@ class Solver:
                 stack[-n:] = [res]
 
                 if target and res == target:
-                    return True, res, seq[:k+1]
+                    # keep only used numbers and ops in stack
+                    seq2 = seq[:k+1]
+                    nb_o = len([e for e in seq2 if isinstance(e, str)])
+                    nb_x = nb_o + 1
+                    c = len(seq2)-1
+                    q = 0
+                    while q < nb_x:
+                        if isinstance(seq2[c], int):
+                            q += 1
+                        c -= 1
+
+                    return True, res, seq[c+1:k+1]
 
                 if isinstance(res, float):
                     raise Exception('wrong type')
@@ -168,7 +179,7 @@ class Solver:
                             'value': res[1],
                         }
                         close_results.append(d)
-                        if res[1] == self.target:                            
+                        if res[1] == self.target:
                             solutions.append(d)
 
                     if stop_at_solution and len(solutions) == stop_at_solution:
@@ -268,5 +279,3 @@ class Solver:
         path = os.path.join(folder, 'df_results.csv')
         self.df_res.to_csv(path, index=None)
         print(f'saved results as {path}')
-
-
