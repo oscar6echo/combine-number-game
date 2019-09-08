@@ -1,0 +1,17 @@
+{
+  "dependencies": {
+    "csv-writer": "^1.5.0",
+    "esm": "^3.2.25",
+    "workerpool": "^5.0.0"
+  },
+  "devDependencies": {
+    "eslint": "^6.3.0",
+    "eslint-config-prettier": "^6.2.0",
+    "eslint-plugin-prettier": "^3.1.0",
+    "prettier": "^1.18.2"
+  },
+  "scripts": {
+    "solve": "node -r esm src/solver.js"
+  },
+  "license": "MIT"
+}

@@ -106,25 +106,31 @@ class Solver:
             if isinstance(e, int):
                 stack.append(e)
             else:
+                # operation
                 if self.verbose or verbose:
                     print(e)
 
                 n, op = self._ops[e]
                 args = stack[-n:]
 
+                # division specific
                 if e == '/' and args[1] == 0:
                     return False, 'div by zero', None
 
+                # perform operation
                 res = op(*args)
 
+                # division specific
                 if e == '/':
                     if args[0] % args[1] != 0:
                         return False, 'not int division', None
                     else:
                         res = int(res)
 
+                # update stack
                 stack[-n:] = [res]
 
+                # early hit
                 if target and res == target:
                     # keep only used numbers and ops in stack
                     seq2 = seq[:k+1]
@@ -137,10 +143,11 @@ class Solver:
                             q += 1
                         c -= 1
 
-                    return True, res, seq[c+1:k+1]
+                    # return True, res, seq[c+1:k+1]
+                    return True, res, seq2[c+1:]
 
-                if isinstance(res, float):
-                    raise Exception('wrong type')
+                # if isinstance(res, float):
+                #     raise Exception('wrong type')
 
             if self.verbose or verbose:
                 print(stack)
@@ -149,14 +156,14 @@ class Solver:
 
     def solve(self,
               n_max_per_pattern=None,
-              close=10,
+              target_range=10,
               stop_at_solution=None):
         """
         """
         t0 = timer()
 
         nb_res = 0
-        close_results = []
+        results_close = []
         solutions = []
 
         print(f'nb binary trees = {len(self.patterns_postfix)}')
@@ -169,16 +176,16 @@ class Solver:
                 g = it.islice(g, n_max_per_pattern)
 
             for seq in g:
-                res = self.eval_sequence(seq, self.target)
+                res = self.eval_sequence(seq, target=self.target)
                 if res[0]:
                     nb_res += 1
-                    if abs(res[1]-self.target) <= close:
+                    if abs(res[1]-self.target) <= target_range:
                         d = {
                             'pattern': k,
                             'sequence': tuple(res[2]),
                             'value': res[1],
                         }
-                        close_results.append(d)
+                        results_close.append(d)
                         if res[1] == self.target:
                             solutions.append(d)
 
@@ -196,26 +203,28 @@ class Solver:
         self.time = t1 - t0
 
         self.nb_res = nb_res
-        self.close_results = close_results
+        self.results_close = results_close
         self.solutions = solutions
 
-        df = pd.DataFrame(self.solutions)
-        self.df_sol = df.drop_duplicates().reset_index(drop=True)
-
-        df = pd.DataFrame(self.close_results)
-        df = df.drop_duplicates().reset_index(drop=True)
+        df = pd.DataFrame(self.results_close)
+        df = df.drop_duplicates(subset='sequence').reset_index(drop=True)
         df['miss'] = df['value'] - self.target
         df['abs_miss'] = df['miss'].abs()
-        df['seq length'] = df['sequence'].apply(lambda x: len(x))
-        df = df.sort_values(['seq length', 'abs_miss']).reset_index(drop=True)
+        df['length'] = df['sequence'].apply(lambda x: len(x))
+        df = df.drop('pattern', axis=1)
+        df = df.sort_values(['length', 'abs_miss']).reset_index(drop=True)
         df = df.drop('abs_miss', axis=1)
         self.df_res = df
+
+        df = self.df_res[self.df_res['value'] == self.target]
+        self.df_sol = df
 
     def show_results(self):
         """
         """
         print(f'run time = {self.time:.2f} s')
-        print(f'nb valid sequences = {len(self.df_res):,}')
+        print(f'nb valid sequences = {self.nb_res:,}')
+        print(f'nb close results = {len(self.df_res):,}')
         print(f'nb solutions = {len(self.df_sol):,}')
         if self.solutions:
             display(self.df_sol)
@@ -233,7 +242,7 @@ class Solver:
         max_ = self.df_res['value'].max()
 
         dic = {k: 0 for k in range(min_, max_+1)}
-        for e in self.close_results:
+        for e in self.df_res.to_dict(orient='records'):
             v = e['value']
             dic[v] = dic[v] + 1
 
