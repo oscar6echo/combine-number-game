@@ -273,7 +273,7 @@ class Solver:
     def store(self):
         """
         """
-        folder = 'dump'
+        folder = 'output'
         if not os.path.exists(folder):
             os.makedirs(folder)
 

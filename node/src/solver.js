@@ -4,6 +4,7 @@ import { SequenceEvaluator } from './sequence-evaluator';
 import { PatternSolver } from './pattern-solver';
 import { createObjectCsvWriter } from 'csv-writer';
 import workerpool from 'workerpool';
+import fs from 'fs';
 
 class Solver {
   constructor({ target, numbers, verbose }) {
@@ -121,6 +122,7 @@ class Solver {
 
         that.showSummary();
         that.showSolutions(showNbSols);
+        that.saveSolutions();
       })
       .catch(function(err) {
         console.error('--------ERROR');
@@ -182,8 +184,12 @@ class Solver {
   }
 
   saveSolutions() {
+    const dir = 'output';
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir);
+    }
     const csvWriter = createObjectCsvWriter({
-      path: '../dump/solutions.csv',
+      path: `./${dir}/solutions.csv`,
       header: [
         { id: 'sequence', title: 'sequence' },
         { id: 'value', title: 'value' },
@@ -230,7 +236,6 @@ solver.solve({
   multithread: true,
   showNbSols: 18
 });
-// solver.saveSolutions();
 
 // let seq, res;
 // seq = solver.shapeSeq('3,4,3,9,6,7,+,*,*,+');

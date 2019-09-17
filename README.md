@@ -18,4 +18,30 @@ For the following input:
 a solution is:
 ((9 * 7) + 4) * (3 + 6 / 2) = (63 + 4) * (3 + 2) = 67 * 5 = 335
 
-See the list of all solutions in the notebook [solve.ipynb](https://nbviewer.jupyter.org/github/oscar6echo/combine-number-game/blob/master/game.ipynb).
+## Python
+
+Run the notebook [game.ipynb](https://nbviewer.jupyter.org/github/oscar6echo/combine-number-game/blob/master/python/game.ipynb) for all the solutions.  
+They are available in [df_solutions.csv](python/output/df_solutions.csv).
+
+## Node
+
+Run the node script for all the solutions.  
+```bash
+# in file src/solver.js
+# set multithread to true or false for parallel run
+yarn solve
+```
+
+They are available in [solutions.csv](node/output/solutions.csv).
+
+## Web - Vue app
+
+Launch the Vue application to find solutions for a problem.
+
+```bash
+yarn serve
+```
+
+
+
+
