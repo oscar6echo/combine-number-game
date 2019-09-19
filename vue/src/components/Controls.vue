@@ -92,7 +92,7 @@ export default {
     return {
       target: 355,
       nbInt: 6,
-      numbers: []
+      numbers: [3, 3, 4, 6, 7, 9]
     };
   },
   watch: {
@@ -120,7 +120,7 @@ export default {
     }
   },
   created: function() {
-    this.shuffle();
+    // this.shuffle();
   },
   methods: {
     shuffle: function() {
