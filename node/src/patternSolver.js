@@ -1,5 +1,5 @@
-import { SequenceGenerator } from './sequence-generator';
-import { SequenceEvaluator } from './sequence-evaluator';
+import { SequenceGenerator } from './sequenceGenerator';
+import { SequenceEvaluator } from './sequenceEvaluator';
 
 class PatternSolver {
   constructor({ pattern, target, numbers, verbose }) {

@@ -2,25 +2,29 @@ import { SequenceGenerator } from './sequenceGenerator';
 import { SequenceEvaluator } from './sequenceEvaluator';
 
 onmessage = function(msg) {
-  const { msgId, workerId, payload } = msg.data;
+  const { workerId, payload } = msg.data;
+  console.log('START worker ' + workerId);
   const { pattern, numbers, target, targetRange } = payload;
   const seqGenerator = new SequenceGenerator({ numbers });
   const seqEvaluator = new SequenceEvaluator({ target });
 
   const defaultTargetRange = 5;
   const g = seqGenerator.run(pattern);
+  let output;
 
   for (let seq of g) {
     const { valid, result, sequence } = seqEvaluator.run(seq);
     if (valid) {
-      if (Math.abs(result - target) <= targetRange || defaultTargetRange) {
-        const payload = {
-          //   isSol: result === this.target,
+      if (Math.abs(result - target) <= (targetRange || defaultTargetRange)) {
+        output = {
           value: result,
-          sequence: JSON.stringify(sequence)
+          sequence
         };
-        postMessage(msgId, workerId, payload);
+        postMessage({ workerId, payload: output });
       }
     }
   }
+  output = { done: true };
+  postMessage({ workerId, payload: output });
+  close();
 };

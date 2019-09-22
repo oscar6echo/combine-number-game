@@ -1,7 +1,8 @@
 import { listBinaryTree } from './combinatorics';
-import { SequenceGenerator } from './sequence-generator';
-import { SequenceEvaluator } from './sequence-evaluator';
-import { PatternSolver } from './pattern-solver';
+import { SequenceGenerator } from './sequenceGenerator';
+import { SequenceEvaluator } from './sequenceEvaluator';
+import { SequenceSignature } from './sequenceSignature';
+import { PatternSolver } from './patternSolver';
 import { createObjectCsvWriter } from 'csv-writer';
 import workerpool from 'workerpool';
 import fs from 'fs';
@@ -33,6 +34,7 @@ class Solver {
 
     this.SequenceGen = new SequenceGenerator({ numbers, verbose });
     this.SequenceEval = new SequenceEvaluator({ target, verbose });
+    this.seqSign = new SequenceSignature({ verbose });
 
     if (this.verbose) {
       const a = this.patterns_postfix.length;
@@ -137,14 +139,16 @@ class Solver {
     const res = [];
     const setSeq = new Set();
     for (let e of results) {
-      if (!setSeq.has(e.sequence)) {
-        setSeq.add(e.sequence);
+      const signature = this.seqSign.run(e.sequence.split(','));
+      if (!setSeq.has(signature)) {
+        setSeq.add(signature);
         const f = {
+          signature,
           sequence: e.sequence,
           value: e.value,
           miss: e.value - this.target,
           absMiss: Math.abs(e.value - this.target),
-          length: e.sequence.split(',').length
+          length: e.sequence.split(',').filter(e => Number.isInteger(+e)).length
         };
         res.push(f);
       }
@@ -172,11 +176,11 @@ class Solver {
   showSolutions(N) {
     if (!N) N = Number.POSITIVE_INFINITY;
     console.log('\nsolutions');
-    console.log(`#\tsequence\tvalue\tabsMiss\tlength`);
+    console.log(`#\tsignature\tsequence\tvalue\tlength`);
     for (let [k, s] of this.solutions.entries()) {
       if (k < N)
         console.log(
-          `${k}\t${s.sequence.toString()}\t${s.value}\t${s.absMiss}\t${
+          `${k}\t${s.signature}\t${s.sequence.toString()}\t${s.value}\t${
             s.length
           }`
         );
@@ -191,9 +195,9 @@ class Solver {
     const csvWriter = createObjectCsvWriter({
       path: `./${dir}/solutions.csv`,
       header: [
+        { id: 'signature', title: 'signature' },
         { id: 'sequence', title: 'sequence' },
         { id: 'value', title: 'value' },
-        { id: 'absMiss', title: 'absMiss' },
         { id: 'length', title: 'length' }
       ]
     });
@@ -202,9 +206,9 @@ class Solver {
       .writeRecords(
         this.solutions.map(e => {
           return {
+            signature: e.signature,
             sequence: e.sequence.toString(),
             value: e.value,
-            absMiss: e.absMiss,
             length: e.length
           };
         })
@@ -223,18 +227,18 @@ class Solver {
 const solver = new Solver({
   target: 355,
   numbers: [3, 3, 4, 6, 7, 9],
-  //   target: 55,
-  //   numbers: [2, 3, 4, 5, 6, 7],
+//   target: 55,
+//   numbers: [2, 3, 4, 5, 6],
   verbose: false
 });
 
 solver.solve({
   //   nbMaxPerPattern: null,
-  //   targetRange: null,
+    targetRange: 5,
   //   stopAtSolution: null,
   //   multithread: true,
   multithread: true,
-  showNbSols: 18
+  showNbSols: 25
 });
 
 // let seq, res;

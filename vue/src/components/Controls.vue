@@ -4,23 +4,27 @@
       <v-col cols="6">
         <v-card class="mx-auto">
           <v-card-title>Rules</v-card-title>
-          <v-card-text class="subtitle-1"
-            >Using only the 4 arithmetic operations add (<span
+          <v-card-text class="subtitle-1">
+            Using only the 4 arithmetic operations add (<span
               class="font-weight-black"
               >+</span
             >), subtract (<span class="font-weight-black">-</span>), multiply
             (<span class="font-weight-black">x</span>) and divide (<span
               class="font-weight-black"
               >/</span
-            >), try and combine all of some of the
-            <span class="font-weight-black">{{ nbInt }}</span> integers
-            available to reach the target
-            <span class="font-weight-black">{{ target }}</span> or get as close
-            as possible.
+            >), try and combine all of some of the NbInt=<span
+              class="font-weight-black"
+              >{{ nbInt }}</span
+            >
+            integers available to reach the Target=<span
+              class="font-weight-black"
+              >{{ target }}</span
+            >
+            or get as close as possible.
           </v-card-text>
         </v-card>
       </v-col>
-      <v-col cols="6">
+      <v-col cols="3">
         <v-card class="mx-auto">
           <v-row>
             <v-col cols="6">
@@ -28,24 +32,90 @@
                 >Target</v-card-text
               >
             </v-col>
-            <v-col cols="3">
-              <v-text-field class="py-0 my-0" type="number" v-model="target" />
+            <v-col cols="4">
+              <integer-input
+                myClass="py-0 my-0"
+                v-model="target"
+                min="0"
+                max="1000"
+              />
             </v-col>
           </v-row>
           <v-row>
             <v-col cols="6">
               <v-card-text class="subtitle-1 text-right py-0 my-0"
-                >Number of Integers</v-card-text
+                >Target Range</v-card-text
               >
             </v-col>
             <v-col cols="3">
-              <v-text-field
-                class="py-0 my-0"
-                type="number"
-                min="3"
+              <integer-input
+                myClass="py-0 my-0"
+                v-model="targetRange"
+                min="0"
                 max="10"
-                step="1"
+              />
+            </v-col>
+          </v-row>
+          <v-row>
+            <v-col cols="6">
+              <v-card-text class="subtitle-1 text-right py-0 my-0"
+                >NbInt</v-card-text
+              >
+            </v-col>
+            <v-col cols="3">
+              <integer-input
+                myClass="py-0 my-0"
                 v-model="nbInt"
+                min="3"
+                max="9"
+              />
+            </v-col>
+          </v-row>
+        </v-card>
+      </v-col>
+      <v-col cols="3">
+        <v-card class="mx-auto">
+          <v-row>
+            <v-col cols="12">
+              <v-card-text
+                v-if="stopAtSolBool"
+                class="subtitle-1 text-center py-0 my-0"
+                >Search for
+                <span class="font-weight-black">{{ stopAtSolution }}</span>
+                solutions</v-card-text
+              >
+              <v-card-text
+                v-if="!stopAtSolBool"
+                class="subtitle-1 text-center py-0 my-0"
+                >Search for
+                <span class="font-weight-black">All</span>
+                solutions</v-card-text
+              >
+            </v-col>
+          </v-row>
+
+          <v-row>
+            <v-col cols="4" />
+            <v-col cols="4">
+              <v-switch
+                hide-details
+                single-line
+                class="py-0 my-0"
+                color="indigo"
+                v-model="stopAtSolBool"
+              ></v-switch>
+            </v-col>
+          </v-row>
+          <v-row>
+            <v-col cols="3" />
+            <v-col cols="5">
+              <integer-input
+                myClass="py-0 my-0"
+                v-model="stopAtSolution"
+                v-bind:solo="true"
+                v-bind:disabled="!stopAtSolBool"
+                min="1"
+                max="100"
               />
             </v-col>
           </v-row>
@@ -54,31 +124,29 @@
     </v-row>
     <v-row>
       <v-col cols="12">
-        <v-card class="mx-auto">
-          <v-row>
-            <v-col cols="12"> </v-col>
-
+        <v-card>
+          <v-row class="" align="end" justify="space-around">
             <v-text-field
               v-for="(nb, idx) in numbers"
+              :key="idx"
               solo
-              class="px-auto mx-auto py-0 my-0 number-input"
+              hide-details
+              single-line
+              class="px-1 mx-1 py-1 my-1 number-input"
               type="number"
               min="0"
               max="100"
               step="1"
               v-model="numbers[idx]"
-              :key="idx"
             />
           </v-row>
-          <v-row>
-            <div class="mx-auto">
-              <v-btn class="ma-2" tile dark color="blue-grey" @click="shuffle">
-                <v-icon left>mdi-dice-multiple</v-icon> Shuffle
-              </v-btn>
-              <v-btn class="ma-2" tile dark color="indigo" @click="solve">
-                <v-icon left>mdi-cached</v-icon> Solve
-              </v-btn>
-            </div>
+          <v-row align="center" justify="center">
+            <v-btn class="ma-2" tile dark color="blue-grey" @click="shuffle">
+              <v-icon left>mdi-dice-multiple</v-icon>Shuffle
+            </v-btn>
+            <v-btn class="ma-2" tile dark color="indigo" @click="solve">
+              <v-icon left>mdi-cached</v-icon>Solve
+            </v-btn>
           </v-row>
         </v-card>
       </v-col>
@@ -87,19 +155,35 @@
 </template>
 
 <script>
+import IntegerInput from './integerInput';
+import Solver from '../solve/solver';
+
 export default {
+  components: {
+    'integer-input': IntegerInput
+  },
   data() {
     return {
-      target: 355,
-      nbInt: 6,
-      numbers: [3, 3, 4, 6, 7, 9]
+      //   target: 355,
+      //   nbInt: 6,
+      //   numbers: [3, 3, 4, 6, 7, 9],
+      target: 25,
+      nbInt: 4,
+      numbers: [2, 3, 4, 5],
+      targetRange: 3,
+      stopAtSolution: 20,
+      stopAtSolBool: true,
+      Nmax: 100,
+      Nmin: 1
     };
   },
+  computed: {
+    labelStopAt() {
+      return `Stop after ${this.stopAtSolution} solutions`;
+    }
+  },
   watch: {
-    nbInt: function(v) {
-      if (!Number.isInteger(+v)) {
-        this.nbInt = Math.round(+v);
-      }
+    nbInt: function() {
       if (this.numbers.length > this.nbInt) {
         this.numbers = this.numbers.slice(0, this.nbInt);
       } else if (this.numbers.length < this.nbInt) {
@@ -111,9 +195,12 @@ export default {
     numbers: {
       handler: function(nbs) {
         for (let [i, e] of nbs.entries()) {
-          if (!Number.isInteger(+e)) {
-            this.numbers[i] = Math.round(+e);
-          }
+          let vNb = +e;
+          if (!Number.isInteger(vNb)) vNb = Math.round(vNb);
+          if (vNb > +this.Nmax) vNb = +this.max;
+          if (vNb < +this.Nmin) vNb = +this.min;
+
+          this.numbers[i] = vNb;
         }
       },
       deep: true
@@ -131,6 +218,18 @@ export default {
     },
     solve: function() {
       console.log('start solve');
+      if (window.Worker) {
+        const solver = new Solver({
+          numbers: this.numbers,
+          target: this.target,
+          targetRange: this.targetRange,
+          stopAtSolution: this.stopAtSolution,
+          verbose: false
+        });
+        solver.run();
+      } else {
+        alert('Your browser does not support Web Workers');
+      }
     }
   }
 };

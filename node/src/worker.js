@@ -1,6 +1,6 @@
 import workerpool from 'workerpool';
 
-import { PatternSolver } from './pattern-solver';
+import { PatternSolver } from './patternSolver';
 
 function solvePattern(jsonA, jsonB) {
 //   console.log('---start solvePattern');

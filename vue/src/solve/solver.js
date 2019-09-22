@@ -1,17 +1,16 @@
 import { listBinaryTree } from './combinatorics';
 import { SequenceSignature } from './sequenceSignature';
-
-const pathWorker = './workerSolvePattern';
+import Worker from './solvePattern.worker.js';
 
 class Solver {
-  constructor({ patterns, numbers, target, targetRange, stopAtSolution }) {
-    this.patterns = patterns;
+  constructor({ numbers, target, targetRange, stopAtSolution, verbose }) {
     this.numbers = numbers;
     this.target = target;
     this.targetRange = targetRange;
     this.stopAtSolution = stopAtSolution;
+    this.verbose = verbose;
 
-    this.seqSign = new SequenceSignature();
+    this.seqSign = new SequenceSignature({ verbose });
     this.patternsPostfix = Array.from(
       listBinaryTree({ n: this.numbers.length, repr: 'postfix' })
     );
@@ -19,21 +18,25 @@ class Solver {
       listBinaryTree({ n: this.numbers.length, repr: 'parenth' })
     );
 
+    console.log('patternsPostfix');
+    console.log(this.patternsPostfix);
+
     this.workers = {};
-    this.promises = [];
-
-    this.resolves = {};
-    this.rejects = {};
-    this.globalMsgId = 0;
-
     this.results = {};
     this.nbSol = 0;
   }
+
   run() {
+    console.log('start run');
+
     const that = this;
-    for (let workerId in this.patterns) {
-      const worker = new Worker(pathWorker);
-      worker.onmessage = this.handleMsg;
+    console.log(that);
+    window.tt = that;
+
+    for (let workerId of this.patternsPostfix) {
+      console.log(workerId);
+      const worker = new Worker();
+      worker.onmessage = msg => this.handleMsg(msg);
       this.workers[workerId] = worker;
       const payload = {
         pattern: workerId,
@@ -41,57 +44,47 @@ class Solver {
         target: this.target,
         targetRange: this.targetRange
       };
-      const promise = this.sendMsg(worker, payload);
-      this.promises.push(promise);
-      promise
-        .then(payload => {
-          console.log('reeceive ' + payload);
-          const sequence = JSON.parse(payload.sequence);
-          const signature = this.seqSign.run(sequence);
-          if (!that.results[signature]) {
-            const { value } = payload;
-            const pattern = payload.workerId;
-            const nbInt = sequence.filter(e => Number.isInteger(e)).length;
-            that.results[signature] = { value, sequence, pattern, nbInt };
-            console.log('store new sol ' + signature);
-
-            if (value === that.target) that.nbSol++;
-            if (that.nbSol === that.stopAtSolution) {
-              console.log('terminate all workers as enough solutions found');
-              for (let w of that.workers) w.terminate();
-            }
-          }
-        })
-        .catch(err => console.log(err));
+      this.sendMsg(workerId, payload);
     }
+    console.log('all workers stated');
   }
 
   handleMsg(msg) {
-    const { msgId, workerId, payload } = msg.data;
-    if (msgId && workerId && payload) {
-      const resolve = this.resolves[msgId];
-      if (resolve) resolve(msg.data);
-    } else {
-      const reject = this.rejects[msgId];
-      if (reject) reject(`Error in worker ${workerId} - msgId=${msgId}`);
+    // const that = this;
+    const { workerId, payload } = msg.data;
+    console.log('new result from workerId=' + workerId);
+    console.log(msg.data);
+
+    if (payload.done) {
+      console.log('done workerId=' + workerId);
+      return;
     }
-    delete this.resolves[msgId];
-    delete this.rejects[msgId];
+
+    const { sequence } = payload;
+    console.log(sequence);
+    const signature = this.seqSign.run(sequence);
+    if (!this.results[signature]) {
+      const { value } = payload;
+      const pattern = payload.workerId;
+      const nbInt = sequence.filter(e => Number.isInteger(e)).length;
+      this.results[signature] = { value, sequence, pattern, nbInt };
+      console.log('store new sol ' + signature);
+
+      if (value === this.target) this.nbSol++;
+      if (this.nbSol === this.stopAtSolution) {
+        console.log('terminate all workers as enough solutions found');
+        for (let w of this.workers) w.terminate();
+      }
+    }
   }
 
   sendMsg(workerId, payload) {
-    const msgId = msgId;
+    const worker = this.workers[workerId];
     const msg = {
-      msgId: msgId,
-      workerId: workerId,
+      workerId,
       payload
     };
-    const worker = this.workers[workerId];
-    return new Promise(function(resolve, reject) {
-      this.resolves[msgId] = resolve;
-      this.rejects[msgId] = reject;
-      worker.postMessage(msg);
-    });
+    worker.postMessage(msg);
   }
 }
 
