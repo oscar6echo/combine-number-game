@@ -41,6 +41,9 @@ class PatternSolver {
             sequence: sequence.toString()
           };
           results.push(d);
+          if (result === this.target) {
+            solutions.push(d);
+          }
         }
       }
       if (stopAtSolution && solutions.length == stopAtSolution) {
