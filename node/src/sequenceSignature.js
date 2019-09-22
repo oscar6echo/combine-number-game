@@ -55,28 +55,28 @@ class SequenceSignature {
 
         // various cases
         if (this.isCommutativeAndAssociative(op)) {
-          if (op === obj1.op) {
-            // flatten tree with left branch
-            leafs = [...obj1.leafs, this.stringify(obj2)];
-            // leafs.sort();
-          } else if (op === obj2.op) {
-            // flatten tree with right branch
-            leafs = [this.stringify(obj1), ...obj2.leafs];
-            // leafs.sort();
-          } else if (op === obj1.op && op === obj2.op) {
-            // flatten tree with left and right branch
-            leafs = [...obj1.leafs, ...obj2.leafs];
-            // leafs.sort();
+            if (op === obj1.op && op === obj2.op) {
+              // flatten tree with left and right branch
+              leafs = [...obj1.leafs, ...obj2.leafs];
+              // leafs.sort();
+            } else if (op === obj1.op) {
+              // flatten tree with left branch
+              leafs = [...obj1.leafs, this.stringify(obj2)];
+              // leafs.sort();
+            } else if (op === obj2.op) {
+              // flatten tree with right branch
+              leafs = [this.stringify(obj1), ...obj2.leafs];
+              // leafs.sort();
+            } else {
+              // no flatten
+              leafs = [this.stringify(obj1), this.stringify(obj2)];
+            }
           } else {
             // no flatten
             leafs = [this.stringify(obj1), this.stringify(obj2)];
           }
-        } else {
-          // no flatten
-          leafs = [this.stringify(obj1), this.stringify(obj2)];
-        }
-        res = { op, leafs };
-
+          res = { op, leafs };
+    
         // udpate stack
         stack.push(res);
       }

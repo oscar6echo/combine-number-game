@@ -92,6 +92,75 @@ class Solver:
                     idx_o += 1
             yield seq
 
+    @staticmethod
+    def stringify(obj):
+        """
+        """
+        if obj.get('leafs') and len(obj.get('leafs')) == 1:
+            return obj.get('leafs')[0]
+
+        op = obj['op']
+        leafs = [str(e) for e in obj['leafs']]
+
+        if (op == '+' or op == '*'):
+            leafs = sorted(leafs[:])
+
+        return '(' + op.join(leafs) + ')'
+
+    def get_signature_sequence(self,
+                               seq,
+                               verbose=False):
+        """
+        """
+        if self.verbose or verbose:
+            print('>>>', seq)
+
+        stack = []
+        for k, e in enumerate(seq):
+            if isinstance(e, int):
+                stack.append(e)
+            else:
+                # operation
+                if self.verbose or verbose:
+                    print(e)
+
+                op = e
+                args = stack[-2:]
+
+                temp = args[0]
+                obj1 = {'op': None, 'leafs': [temp]} if isinstance(temp, int) else temp
+                temp = args[1]
+                obj2 = {'op': None, 'leafs': [temp]} if isinstance(temp, int) else temp
+
+                # various cases
+                if (op == '+' or op == '*'):
+                    if op == obj1['op'] and op == obj2['op']:
+                        # flatten tree with left and right branches
+                        leafs = obj1['leafs']+obj2['leafs']
+                    elif op == obj1['op']:
+                        # flatten tree with left branch
+                        leafs = obj1['leafs']+[Solver.stringify(obj2)] 
+                    elif op == obj2['op']:
+                        # flatten tree with right branch
+                        leafs = [Solver.stringify(obj1)]+obj2['leafs']
+                    else:
+                        # no flatten
+                        leafs = [Solver.stringify(obj1)]+[Solver.stringify(obj2)]
+                else:
+                    # no flatten
+                    leafs = [Solver.stringify(obj1)]+[Solver.stringify(obj2)]
+
+                res = {'op': op, 'leafs': leafs}
+
+                # udpate stack
+                stack[-2:] = [res]
+
+            if self.verbose or verbose:
+                print(stack)
+
+        res = Solver.stringify(res)[1:-1]
+        return res
+
     def eval_sequence(self,
                       seq,
                       target=None,
@@ -156,7 +225,7 @@ class Solver:
 
     def solve(self,
               n_max_per_pattern=None,
-              target_range=10,
+              target_range=5,
               stop_at_solution=None):
         """
         """
@@ -208,6 +277,8 @@ class Solver:
 
         df = pd.DataFrame(self.results_close)
         df = df.drop_duplicates(subset='sequence').reset_index(drop=True)
+        df['signature'] = df['sequence'].map(lambda x: self.get_signature_sequence(x))
+        df = df.drop_duplicates(subset='signature').reset_index(drop=True)
         df['miss'] = df['value'] - self.target
         df['abs_miss'] = df['miss'].abs()
         df['length'] = df['sequence'].apply(lambda x: len(x))

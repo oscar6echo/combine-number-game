@@ -124,7 +124,8 @@ class Solver {
 
         that.showSummary();
         that.showSolutions(showNbSols);
-        that.saveSolutions();
+        that.saveToFile('solutions');
+        that.saveToFile('resultsClose');
       })
       .catch(function(err) {
         console.error('--------ERROR');
@@ -187,13 +188,13 @@ class Solver {
     }
   }
 
-  saveSolutions() {
+  saveToFile(type) {
     const dir = 'output';
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir);
     }
     const csvWriter = createObjectCsvWriter({
-      path: `./${dir}/solutions.csv`,
+      path: `./${dir}/${type}.csv`,
       header: [
         { id: 'signature', title: 'signature' },
         { id: 'sequence', title: 'sequence' },
@@ -204,7 +205,7 @@ class Solver {
 
     csvWriter
       .writeRecords(
-        this.solutions.map(e => {
+        this[type].map(e => {
           return {
             signature: e.signature,
             sequence: e.sequence.toString(),
@@ -225,10 +226,10 @@ class Solver {
 }
 
 const solver = new Solver({
-  target: 355,
-  numbers: [3, 3, 4, 6, 7, 9],
-//   target: 55,
-//   numbers: [2, 3, 4, 5, 6],
+//   target: 355,
+//   numbers: [3, 3, 4, 6, 7, 9],
+  target: 55,
+  numbers: [2, 3, 4, 5, 6],
   verbose: false
 });
 
