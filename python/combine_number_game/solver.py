@@ -93,7 +93,7 @@ class Solver:
             yield seq
 
     @staticmethod
-    def stringify(obj):
+    def stringify_without_special_case(obj):
         """
         """
         if obj.get('leafs') and len(obj.get('leafs')) == 1:
@@ -105,6 +105,36 @@ class Solver:
         if (op == '+' or op == '*'):
             leafs = sorted(leafs[:])
 
+        return '(' + op.join(leafs) + ')'
+
+    @staticmethod
+    def stringify(obj):
+        """
+        """
+        if obj.get('leafs') and len(obj.get('leafs')) == 1:
+            # single int
+            return obj.get('leafs')[0]
+
+        op = obj['op']
+        leafs = [str(e) for e in obj['leafs']]
+
+        if (op == '*'):
+            # mult case
+            leafs = sorted(leafs[:])
+            return '(' + op.join(leafs) + ')'
+        elif (op == '+'):
+            # add case - incl. sub case due to special case
+            leafsMinus = [e for e in leafs if e.startswith('-')]
+            leafsPlus = [e for e in leafs if not e.startswith('-')]
+
+            leafsMinus = sorted(leafsMinus[:])
+            leafsPlus = sorted(leafsPlus[:])
+
+            return '(' + '+'.join(leafsPlus) + ''.join(leafsMinus) + ')'
+
+        # non commutative default
+        # div case
+        # sub case - outside special case
         return '(' + op.join(leafs) + ')'
 
     def get_signature_sequence(self,
@@ -132,6 +162,11 @@ class Solver:
                 temp = args[1]
                 obj2 = {'op': None, 'leafs': [temp]} if isinstance(temp, int) else temp
 
+                # special case
+                if (op == '-' and obj2['op'] is None):
+                    op = '+'
+                    obj2['leafs'][0] = '-' + str(obj2['leafs'][0])
+
                 # various cases
                 if (op == '+' or op == '*'):
                     if op == obj1['op'] and op == obj2['op']:
@@ -139,7 +174,7 @@ class Solver:
                         leafs = obj1['leafs']+obj2['leafs']
                     elif op == obj1['op']:
                         # flatten tree with left branch
-                        leafs = obj1['leafs']+[Solver.stringify(obj2)] 
+                        leafs = obj1['leafs']+[Solver.stringify(obj2)]
                     elif op == obj2['op']:
                         # flatten tree with right branch
                         leafs = [Solver.stringify(obj1)]+obj2['leafs']
@@ -212,11 +247,7 @@ class Solver:
                             q += 1
                         c -= 1
 
-                    # return True, res, seq[c+1:k+1]
                     return True, res, seq2[c+1:]
-
-                # if isinstance(res, float):
-                #     raise Exception('wrong type')
 
             if self.verbose or verbose:
                 print(stack)
@@ -232,7 +263,7 @@ class Solver:
         t0 = timer()
 
         nb_res = 0
-        results_close = []
+        results = []
         solutions = []
 
         print(f'nb binary trees = {len(self.patterns_postfix)}')
@@ -254,7 +285,7 @@ class Solver:
                             'sequence': tuple(res[2]),
                             'value': res[1],
                         }
-                        results_close.append(d)
+                        results.append(d)
                         if res[1] == self.target:
                             solutions.append(d)
 
@@ -272,19 +303,20 @@ class Solver:
         self.time = t1 - t0
 
         self.nb_res = nb_res
-        self.results_close = results_close
+        self.results = results
         self.solutions = solutions
 
-        df = pd.DataFrame(self.results_close)
+        df = pd.DataFrame(self.results)
         df = df.drop_duplicates(subset='sequence').reset_index(drop=True)
         df['signature'] = df['sequence'].map(lambda x: self.get_signature_sequence(x))
         df = df.drop_duplicates(subset='signature').reset_index(drop=True)
         df['miss'] = df['value'] - self.target
         df['abs_miss'] = df['miss'].abs()
-        df['length'] = df['sequence'].apply(lambda x: len(x))
+        df['length'] = df['sequence'].apply(lambda x: int((len(x)+1)/2))
         df = df.drop('pattern', axis=1)
         df = df.sort_values(['length', 'abs_miss']).reset_index(drop=True)
         df = df.drop('abs_miss', axis=1)
+        df = df[['signature', 'value', 'length', 'sequence', 'miss']]
         self.df_res = df
 
         df = self.df_res[self.df_res['value'] == self.target]
@@ -300,12 +332,6 @@ class Solver:
         if self.solutions:
             display(self.df_sol)
 
-    def inspect_solution(self, n):
-        """
-        """
-        return self.eval_sequence(self.solutions[n]['sequence'],
-                                  verbose=True)
-
     def stats_results(self):
         """
         """
@@ -318,7 +344,7 @@ class Solver:
             dic[v] = dic[v] + 1
 
         dfh = pd.DataFrame(data=[[k, dic[k]] for k in dic.keys()],
-                           columns=['value', 'nb hits'])
+                           columns=['value', 'nb solutions'])
         dfh = dfh.set_index('value')
 
         c1, c2 = ["#9b59b6", "#3498db"]
@@ -327,11 +353,12 @@ class Solver:
         color = [[c2 if e != idx else c1
                   for e in range(len(dfh))]]
         with sns.axes_style("darkgrid"):
-            ax = dfh.plot(kind='bar',
-                          width=0.85,
-                          figsize=(12, 5),
-                          color=color,
-                          )
+            ax = dfh.plot(
+                kind='bar',
+                width=0.85,
+                figsize=(12, 5),
+                color=color,
+            )
 
     def show_patterns(self):
         """

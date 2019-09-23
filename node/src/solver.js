@@ -117,15 +117,15 @@ class Solver {
         // console.log('resultsClose.length', resultsClose.length);
 
         that.nbValidSeq = nbValidSeq;
-        that.resultsClose = that.buildResults(resultsClose);
-        that.solutions = that.resultsClose.filter(e => e.value === that.target);
+        that.results = that.buildResults(resultsClose);
+        that.solutions = that.results.filter(e => e.value === that.target);
 
         console.timeEnd('exec');
 
         that.showSummary();
         that.showSolutions(showNbSols);
         that.saveToFile('solutions');
-        that.saveToFile('resultsClose');
+        that.saveToFile('results');
       })
       .catch(function(err) {
         console.error('--------ERROR');
@@ -171,7 +171,7 @@ class Solver {
   showSummary() {
     console.log('\nsummary');
     console.log(`nb valid sequence = ${this.nbValidSeq}`);
-    console.log(`nb close results = ${this.resultsClose.length}`);
+    console.log(`nb close results = ${this.results.length}`);
     console.log(`nb solutions = ${this.solutions.length}`);
   }
   showSolutions(N) {
@@ -226,18 +226,17 @@ class Solver {
 }
 
 const solver = new Solver({
-//   target: 355,
-//   numbers: [3, 3, 4, 6, 7, 9],
-  target: 55,
-  numbers: [2, 3, 4, 5, 6],
+  target: 355,
+  numbers: [3, 3, 4, 6, 7, 9],
+//   target: 55,
+//   numbers: [2, 3, 4, 5, 6],
   verbose: false
 });
 
 solver.solve({
-  //   nbMaxPerPattern: null,
     targetRange: 5,
+  //   nbMaxPerPattern: null,
   //   stopAtSolution: null,
-  //   multithread: true,
   multithread: true,
   showNbSols: 25
 });
