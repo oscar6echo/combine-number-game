@@ -108,7 +108,9 @@ class Solver {
         // let nbValid, results;
         for (let e of arrData) {
           const { nbValid, results } = multithread ? JSON.parse(e) : e;
+          //   const { nbValid, results } =  e;
           nbValidSeq += nbValid;
+          //   console.log(results)
           resultsClose.push(...results);
         }
 
@@ -140,7 +142,10 @@ class Solver {
     const res = [];
     const setSeq = new Set();
     for (let e of results) {
-      const signature = this.seqSign.run(e.sequence.split(','));
+      //   const signature = this.seqSign.run(e.sequence.split(','));
+    //   console.log(e.sequence);
+    //   console.log(e.sequence.map(e => String(e)));
+      const signature = this.seqSign.run(e.sequence.map(e => String(e)));
       if (!setSeq.has(signature)) {
         setSeq.add(signature);
         const f = {
@@ -149,7 +154,8 @@ class Solver {
           value: e.value,
           miss: e.value - this.target,
           absMiss: Math.abs(e.value - this.target),
-          length: e.sequence.split(',').filter(e => Number.isInteger(+e)).length
+        //   length: e.sequence.split(',').filter(e => Number.isInteger(+e)).length
+          length: e.sequence.filter(e => Number.isInteger(+e)).length
         };
         res.push(f);
       }
@@ -226,15 +232,15 @@ class Solver {
 }
 
 const solver = new Solver({
-  target: 355,
-  numbers: [3, 3, 4, 6, 7, 9],
+    target: 355,
+    numbers: [3, 3, 4, 6, 7, 9],
 //   target: 55,
 //   numbers: [2, 3, 4, 5, 6],
   verbose: false
 });
 
 solver.solve({
-    targetRange: 5,
+  targetRange: 5,
   //   nbMaxPerPattern: null,
   //   stopAtSolution: null,
   multithread: true,

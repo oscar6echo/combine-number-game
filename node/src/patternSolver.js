@@ -38,7 +38,8 @@ class PatternSolver {
         if (Math.abs(result - this.target) <= targetRange) {
           const d = {
             value: result,
-            sequence: sequence.toString()
+            // sequence: sequence.toString()
+            sequence
           };
           results.push(d);
           if (result === this.target) {

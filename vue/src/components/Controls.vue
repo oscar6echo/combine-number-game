@@ -5,21 +5,15 @@
         <v-card class="mx-auto">
           <v-card-title>Rules</v-card-title>
           <v-card-text class="subtitle-1">
-            Using only the 4 arithmetic operations add (<span
-              class="font-weight-black"
-              >+</span
-            >), subtract (<span class="font-weight-black">-</span>), multiply
-            (<span class="font-weight-black">x</span>) and divide (<span
-              class="font-weight-black"
-              >/</span
-            >), try and combine all of some of the NbInt=<span
-              class="font-weight-black"
-              >{{ nbInt }}</span
-            >
-            integers available to reach the Target=<span
-              class="font-weight-black"
-              >{{ target }}</span
-            >
+            Using only the 4 arithmetic operations add (
+            <span class="font-weight-black">+</span>), subtract (
+            <span class="font-weight-black">-</span>), multiply (
+            <span class="font-weight-black">x</span>) and divide (
+            <span class="font-weight-black">/</span>), try and combine all of
+            some of the NbInt=
+            <span class="font-weight-black">{{ nbInt }}</span>
+            integers available to reach the Target=
+            <span class="font-weight-black">{{ target }}</span>
             or get as close as possible.
           </v-card-text>
         </v-card>
@@ -34,6 +28,7 @@
             </v-col>
             <v-col cols="4">
               <integer-input
+                name="target"
                 myClass="py-0 my-0"
                 v-model="target"
                 min="0"
@@ -49,6 +44,7 @@
             </v-col>
             <v-col cols="3">
               <integer-input
+                name="targetRange"
                 myClass="py-0 my-0"
                 v-model="targetRange"
                 min="0"
@@ -64,6 +60,7 @@
             </v-col>
             <v-col cols="3">
               <integer-input
+                name="nbInt"
                 myClass="py-0 my-0"
                 v-model="nbInt"
                 min="3"
@@ -80,17 +77,19 @@
               <v-card-text
                 v-if="stopAtSolBool"
                 class="subtitle-1 text-center py-0 my-0"
-                >Search for
-                <span class="font-weight-black">{{ stopAtSolution }}</span>
-                solutions</v-card-text
               >
+                Search for
+                <span class="font-weight-black">{{ stopAtSolution }}</span>
+                solutions
+              </v-card-text>
               <v-card-text
                 v-if="!stopAtSolBool"
                 class="subtitle-1 text-center py-0 my-0"
-                >Search for
-                <span class="font-weight-black">All</span>
-                solutions</v-card-text
               >
+                Search for
+                <span class="font-weight-black">All</span>
+                solutions
+              </v-card-text>
             </v-col>
           </v-row>
 
@@ -125,19 +124,20 @@
     <v-row>
       <v-col cols="12">
         <v-card>
-          <v-row class="" align="end" justify="space-around">
+          <v-row class align="end" justify="space-around">
             <v-text-field
               v-for="(nb, idx) in numbers"
+              :id="'number-' + idx"
               :key="idx"
               solo
               hide-details
               single-line
               class="px-1 mx-1 py-1 my-1 number-input"
               type="number"
-              min="0"
-              max="100"
+              :min="Nmin"
+              :max="Nmax"
               step="1"
-              v-model="numbers[idx]"
+              v-model.number="numbers[idx]"
             />
           </v-row>
           <v-row align="center" justify="center">
@@ -187,20 +187,22 @@ export default {
       if (this.numbers.length > this.nbInt) {
         this.numbers = this.numbers.slice(0, this.nbInt);
       } else if (this.numbers.length < this.nbInt) {
+        const numbers = this.numbers.slice();
         for (let i = this.numbers.length; i < this.nbInt; i++) {
-          this.numbers.push(0);
+          numbers.push(0);
         }
+        this.numbers = numbers.slice();
       }
     },
     numbers: {
-      handler: function(nbs) {
-        for (let [i, e] of nbs.entries()) {
-          let vNb = +e;
-          if (!Number.isInteger(vNb)) vNb = Math.round(vNb);
-          if (vNb > +this.Nmax) vNb = +this.max;
-          if (vNb < +this.Nmin) vNb = +this.min;
+      handler: function() {
+        for (let [i, e] of this.numbers.entries()) {
+          this.numbers[i] = Math.round(e);
 
-          this.numbers[i] = vNb;
+          const that = this;
+          setTimeout(() => {
+            document.getElementById('number-' + i).value = that.numbers[i];
+          }, 0);
         }
       },
       deep: true
@@ -237,6 +239,6 @@ export default {
 
 <style scoped>
 .number-input {
-  max-width: 70px;
+  max-width: 80px;
 }
 </style>

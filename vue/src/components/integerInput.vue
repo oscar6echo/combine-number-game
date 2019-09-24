@@ -1,5 +1,6 @@
 <template>
   <v-text-field
+    :id="'number-' + name"
     :class="myClass"
     hide-details
     single-line
@@ -9,13 +10,14 @@
     :min="min"
     :max="max"
     step="1"
-    v-model="localVal"
+    v-model.number="localVal"
   />
 </template>
 
 <script>
 export default {
   props: {
+    name: String,
     myClass: String,
     min: String,
     max: String,
@@ -32,23 +34,22 @@ export default {
   watch: {
     value: {
       handler: function() {
-        console.log('update');
         this.localVal = Math.round(this.value);
       },
       immediate: true
     },
     localVal: function(v) {
-      let vNb = +v;
-      if (!Number.isInteger(vNb)) vNb = Math.round(vNb);
-      if (vNb > +this.max) vNb = +this.max;
-      if (vNb < +this.min) vNb = +this.min;
+      this.localVal = Math.round(v);
+      this.$emit('input', this.localVal);
 
-      this.localVal = vNb;
-      console.log(typeof vNb, Number.isInteger(vNb), vNb, this.localVal);
-      this.$emit('input', vNb);
+      setTimeout(() => {
+        document.getElementById('number-' + this.name).value = this.localVal;
+      }, 0);
     }
   },
   methods: {},
   created() {}
 };
 </script>
+
+<style scoped></style>

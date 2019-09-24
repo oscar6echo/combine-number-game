@@ -31,13 +31,13 @@ class Solver {
 
     const that = this;
     console.log(that);
-    window.tt = that;
+    window.that = that;
 
     for (let workerId of this.patternsPostfix) {
       console.log(workerId);
       const worker = new Worker();
       worker.onmessage = msg => this.handleMsg(msg);
-      this.workers[workerId] = worker;
+      this.workers[workerId] = { worker, done: false, nbHit: 0 };
       const payload = {
         pattern: workerId,
         numbers: this.numbers,
@@ -48,6 +48,12 @@ class Solver {
     }
     console.log('all workers stated');
   }
+  alldone() {
+    for (let [k, w] of Object.entries(this.workers)) {
+      if (!w.done) return false;
+    }
+    return true;
+  }
 
   handleMsg(msg) {
     // const that = this;
@@ -57,29 +63,36 @@ class Solver {
 
     if (payload.done) {
       console.log('done workerId=' + workerId);
+      this.workers[workerId].done = true;
+
+      if (this.alldone()) {
+        console.log('ALL DONE');
+        console.log(this.results);
+      }
       return;
     }
 
+    this.workers[workerId].nbHit++;
+
     const { sequence } = payload;
     console.log(sequence);
-    const signature = this.seqSign.run(sequence);
+    const signature = this.seqSign.run(sequence.map(e => String(e)));
     if (!this.results[signature]) {
       const { value } = payload;
-      const pattern = payload.workerId;
       const nbInt = sequence.filter(e => Number.isInteger(e)).length;
-      this.results[signature] = { value, sequence, pattern, nbInt };
+      this.results[signature] = { value, sequence, nbInt };
       console.log('store new sol ' + signature);
 
       if (value === this.target) this.nbSol++;
       if (this.nbSol === this.stopAtSolution) {
         console.log('terminate all workers as enough solutions found');
-        for (let w of this.workers) w.terminate();
+        for (let [k, w] of Object.entries(this.workers)) w.terminate();
       }
     }
   }
 
   sendMsg(workerId, payload) {
-    const worker = this.workers[workerId];
+    const worker = this.workers[workerId].worker;
     const msg = {
       workerId,
       payload
