@@ -151,6 +151,48 @@
         </v-card>
       </v-col>
     </v-row>
+
+    <v-row>
+      <v-col cols="12">
+        <v-expansion-panels inset>
+          <v-expansion-panel>
+            <v-expansion-panel-header class="title"
+              >Playground</v-expansion-panel-header
+            >
+            <v-expansion-panel-content>
+              <v-card class="mx-auto" color="grey lighten-5">
+                <v-text-field
+                  solo
+                  :rules="[rules.validChars]"
+                  class="mx-auto py-2 my-1 playground"
+                  label="Input expression"
+                  hint="e.g. (2+3)*(10/2)-1"
+                  v-model="playgroundExpr"
+                ></v-text-field>
+              </v-card>
+            </v-expansion-panel-content>
+          </v-expansion-panel>
+          <v-expansion-panel>
+            <v-expansion-panel-header class="title"
+              >Logs</v-expansion-panel-header
+            >
+            <v-expansion-panel-content>TBD</v-expansion-panel-content>
+          </v-expansion-panel>
+          <v-expansion-panel>
+            <v-expansion-panel-header class="title"
+              >Solutions</v-expansion-panel-header
+            >
+            <v-expansion-panel-content>TBD</v-expansion-panel-content>
+          </v-expansion-panel>
+          <v-expansion-panel>
+            <v-expansion-panel-header class="title"
+              >Results</v-expansion-panel-header
+            >
+            <v-expansion-panel-content>TBD</v-expansion-panel-content>
+          </v-expansion-panel>
+        </v-expansion-panels>
+      </v-col>
+    </v-row>
   </v-container>
 </template>
 
@@ -174,7 +216,21 @@ export default {
       stopAtSolution: 20,
       stopAtSolBool: true,
       Nmax: 100,
-      Nmin: 1
+      Nmin: 1,
+      playgroundExpr: '',
+      rules: {
+        validChars: v => {
+          //   console.log(
+          //     v,
+          //     this.filterExpr(v),
+          //     this.filterExpr(v).length !== v.length
+          //   );
+          return (
+            this.filterExpr(v).length === v.length ||
+            'Only characters 0-9 +-*/ () are valid'
+          );
+        }
+      }
     };
   },
   computed: {
@@ -206,6 +262,37 @@ export default {
         }
       },
       deep: true
+    },
+    playgroundExpr: function(expr) {
+      console.log('----');
+      console.log(expr);
+      const filtered = this.filterExpr(expr);
+      console.log(filtered);
+      //   console.log(eval(filtered));
+      const regExp = /(\([^())]+\))/g;
+
+      const matches = filtered.match(regExp);
+      console.log(matches);
+
+      console.log('start');
+      var s = filtered;
+
+      //   var re = /\s*([^[:]+):\"([^"]+)"/g;
+      var re = regExp;
+      var m;
+      while ((m = re.exec(s))) {
+        console.log(m[1], m[2]);
+        console.log(m);
+      }
+      console.log('end');
+      //   let m;
+      //   do {
+      //     const m = regExp.exec(filtered);
+      //     if (m) {
+      //       console.log(m[1], m[2]);
+      //       console.log(m);
+      //     }
+      //   } while (m);
     }
   },
   created: function() {
@@ -217,6 +304,9 @@ export default {
       for (let i = 0; i < this.nbInt; i++) {
         this.numbers[i] = 1 + Math.floor(Math.random() * 15);
       }
+    },
+    filterExpr: function(expr) {
+      return expr.replace(/[^0-9+-/()\\*]+/g, '');
     },
     solve: function() {
       console.log('start solve');
@@ -240,5 +330,9 @@ export default {
 <style scoped>
 .number-input {
   max-width: 80px;
+}
+
+.playground {
+  max-width: 350px;
 }
 </style>
